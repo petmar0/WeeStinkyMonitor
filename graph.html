@@ -1,0 +1,82 @@
+<html>
+  <head>
+    <!-- EXTERNAL LIBS-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://www.google.com/jsapi"></script>
+
+    <!-- EXAMPLE SCRIPT -->
+    <script>
+
+      // onload callback
+      function drawChart() {
+
+        var public_key = 'MGGvD5py95U3KE3q8Qlq';
+
+        // JSONP request
+        var jsonData = $.ajax({
+          url: 'https://data.sparkfun.com/output/' + public_key + '.json',
+          data: {page: 1},
+          dataType: 'jsonp',
+        }).done(function (results) {
+
+          var data = new google.visualization.DataTable();
+
+          data.addColumn('P', 'Atmospheric Pressure (mBar)');
+          data.addColumn('RH', 'Relative Humidity (%)');
+          data.addColumn('Tair', 'Air Temperature (°C)');
+          data.addColumn('Tstream','Water Temperature (°C)');
+          data.addColumn('conductivity','Conductivity (S)');
+          data.addColumn('depth1','Upstream Depth (m)');
+          data.addColumn('depth2','Downstream Depth (m)');
+          data.addColumn('flow','Flow Rate (L/sec)');
+          data.addColumn('light','Illuminance (Lux)');
+          data.addColumn('pH','pH');
+          data.addColumn('rain','Rainfall (m)');
+          data.addColumn('t','Time');
+          data.addColumn('winddir','Wind Direction (°)');
+          data.addColumn('windmag','Wind Speed (m/sec)');
+
+          $.each(results, function (i, row) {
+            data.addRow([
+              (new Date(row.t)),
+              parseFloat(row.P),
+              parseFloat(row.RH),
+              parseFloat(row.Tair),
+              parseFloat(row.Tstream),
+              parseFloat(row.conductivity),
+              parseFloat(row.depth1),
+              parseFloat(row.depth2),
+              parseFloat(row.flow),
+              parseFloat(row.light),
+              parseFloat(row.pH),
+              parseFloat(row.rain),
+              parseFloat(row.winddir),
+              parseFloat(row.windmag)
+            ]);
+          });
+
+          var chart = new google.visualization.LineChart($('#chart').get(0));
+
+          chart.draw(data, {
+            title: 'Wee Stinky Glen'
+          });
+
+        });
+
+      }
+
+      // load chart lib
+      google.load('visualization', '1', {
+        packages: ['corechart']
+      });
+
+      // call drawChart once google charts is loaded
+      google.setOnLoadCallback(drawChart);
+
+    </script>
+
+  </head>
+  <body>
+    <div id="chart" style="width: 100%;"></div>
+  </body>
+</html>
