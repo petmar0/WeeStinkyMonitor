@@ -1,3 +1,4 @@
+<html>
   <head>
     <!-- EXTERNAL LIBS-->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
@@ -19,22 +20,20 @@
         }).done(function (results) {
 
           var data = new google.visualization.DataTable();
-
           data.addColumn('number', 'Atmospheric Pressure (mBar)');
           data.addColumn('number', 'Relative Humidity (%)');
           data.addColumn('number', 'Air Temperature (°C)');
-          data.addColumn('number','Water Temperature (°C)');
-          data.addColumn('number','Conductivity (S)');
-          data.addColumn('number','Upstream Depth (m)');
-          data.addColumn('number','Downstream Depth (m)');
-          data.addColumn('number','Flow Rate (L/sec)');
-          data.addColumn('number','Illuminance (Lux)');
-          data.addColumn('number','pH');
-          data.addColumn('number','Rainfall (m)');
-          data.addColumn('number','Time');
-          data.addColumn('datetime','Date and Time');
-          data.addColumn('number','Wind Direction (°)');
-          data.addColumn('number','Wind Speed (m/sec)');
+          data.addColumn('number', 'Water Temperature (°C)');
+          data.addColumn('number', 'Conductivity (S)');
+          data.addColumn('number', 'Upstream Depth (m)');
+          data.addColumn('number', 'Downstream Depth (m)');
+          data.addColumn('number', 'Flow Rate (L/sec)');
+          data.addColumn('number', 'Illuminance (Lux)');
+          data.addColumn('number', 'pH');
+          data.addColumn('number', 'Rainfall (m)');
+          data.addColumn('datetime', 'Date and Time');
+          data.addColumn('number', 'Wind Direction (°)');
+          data.addColumn('number', 'Wind Speed (m/sec)');
 
           $.each(results, function (i, row) {
             data.addRow([
@@ -79,3 +78,4 @@
   <body>
     <div id="chart" style="width: 100%;"></div>
   </body>
+</html>
