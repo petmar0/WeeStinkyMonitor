@@ -33,12 +33,13 @@
           data.addColumn('pH','pH');
           data.addColumn('rain','Rainfall (m)');
           data.addColumn('t','Time');
+          data.addColumn('timestamp','Date and Time');
           data.addColumn('winddir','Wind Direction (°)');
           data.addColumn('windmag','Wind Speed (m/sec)');
 
           $.each(results, function (i, row) {
             data.addRow([
-              (new Date(row.t)),
+              (new Date(row.timestamp)),
               parseFloat(row.P),
               parseFloat(row.RH),
               parseFloat(row.Tair),
