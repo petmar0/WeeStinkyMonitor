@@ -21,21 +21,21 @@
 
           var data = new google.visualization.DataTable();
 
-          data.addColumn('P', 'Atmospheric Pressure (mBar)');
-          data.addColumn('RH', 'Relative Humidity (%)');
-          data.addColumn('Tair', 'Air Temperature (°C)');
-          data.addColumn('Tstream','Water Temperature (°C)');
-          data.addColumn('conductivity','Conductivity (S)');
-          data.addColumn('depth1','Upstream Depth (m)');
-          data.addColumn('depth2','Downstream Depth (m)');
-          data.addColumn('flow','Flow Rate (L/sec)');
-          data.addColumn('light','Illuminance (Lux)');
-          data.addColumn('pH','pH');
-          data.addColumn('rain','Rainfall (m)');
-          data.addColumn('t','Time');
-          data.addColumn('timestamp','Date and Time');
-          data.addColumn('winddir','Wind Direction (°)');
-          data.addColumn('windmag','Wind Speed (m/sec)');
+          data.addColumn('number', 'Atmospheric Pressure (mBar)');
+          data.addColumn('number', 'Relative Humidity (%)');
+          data.addColumn('number', 'Air Temperature (°C)');
+          data.addColumn('number','Water Temperature (°C)');
+          data.addColumn('number','Conductivity (S)');
+          data.addColumn('number','Upstream Depth (m)');
+          data.addColumn('number','Downstream Depth (m)');
+          data.addColumn('number','Flow Rate (L/sec)');
+          data.addColumn('number','Illuminance (Lux)');
+          data.addColumn('number','pH');
+          data.addColumn('number','Rainfall (m)');
+          data.addColumn('number','Time');
+          data.addColumn('datetime','Date and Time');
+          data.addColumn('number','Wind Direction (°)');
+          data.addColumn('number','Wind Speed (m/sec)');
 
           $.each(results, function (i, row) {
             data.addRow([
