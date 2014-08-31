@@ -78,8 +78,8 @@ SFE_CC3000_Client client = SFE_CC3000_Client(wifi);
 /////////////////
 const String publicKey = "MGGvD5py95U3KE3q8Qlq";
 const String privateKey = "nzzox2krM2hVldVqDXZq";
-const byte NUM_FIELDS = 14;
-const String fieldNames[NUM_FIELDS] = {"P","RH","Tair","Tstream","conductivity","depth1","depth2","flow","light","pH","rain","t","winddir","windmag"};
+const byte NUM_FIELDS = 13;
+const String fieldNames[NUM_FIELDS] = {"P","RH","Tair","Tstream","conductivity","depth1","depth2","flow","light","pH","rain","winddir","windmag"};
 String fieldData[NUM_FIELDS];
 
 //////////////////////
