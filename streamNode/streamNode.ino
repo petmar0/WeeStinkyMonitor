@@ -66,8 +66,8 @@ char ap_password[] = "";        // Password of network
 unsigned int ap_security = WLAN_SEC_UNSEC; // Security of network
 // ap_security can be any of: WLAN_SEC_UNSEC, WLAN_SEC_WEP, 
 //  WLAN_SEC_WPA, or WLAN_SEC_WPA2
-unsigned int timeout = 30000;             // Milliseconds
-char server[] = "data.sparkfun.com";      // Remote host site
+unsigned int timeout = 3000;             // Milliseconds
+char server[] = "data.sparkfun.com";      // Remote host site: 54.86.132.254=data.sparkfun.com
 
 // Initialize the CC3000 objects (shield and client):
 SFE_CC3000 wifi = SFE_CC3000(CC3000_INT, CC3000_EN, CC3000_CS);
@@ -82,70 +82,43 @@ const byte NUM_FIELDS = 13;
 const String fieldNames[NUM_FIELDS] = {"P","RH","Tair","Tstream","conductivity","depth1","depth2","flow","light","pH","rain","winddir","windmag"};
 String fieldData[NUM_FIELDS];
 
-//////////////////////
-// Input Pins, Misc //
-//////////////////////
-const int triggerPin = 3;
-const int lightPin = A0;
-const int switchPin = 5;
-String name = "Anonymouse";
-boolean newName = true;
-
 void setup()
 {
   Serial.begin(115200);
-  
-  // Setup Input Pins:
-  pinMode(triggerPin, INPUT_PULLUP);
-  pinMode(switchPin, INPUT_PULLUP);
-  pinMode(lightPin, INPUT_PULLUP);
   
   // Set Up WiFi:
   setupWiFi();
   
   Serial.println(F("=========== Ready to Stream ==========="));
-  Serial.println(F("Press the button (D3) to send an update"));
-  Serial.println(F("Type your name (no spaces!), followed by '!' to update name"));
 }
 
 void loop()
 {
-  // If the trigger pin (3) goes low, send the data.
-  if (!digitalRead(triggerPin))
-  {
-    // Gather data:
-    fieldData[0] = String(analogRead(lightPin));
-    fieldData[1] = String(digitalRead(switchPin));
-    fieldData[2] = name;
-    
-    // Post data:
-    Serial.println("Posting!");
-    postData(); // the postData() function does all the work, 
-                // check it out below.
-    delay(1000);
-  }
-  
-  // Check for a new name input:
-  if (Serial.available())
-  {
-    char c = Serial.read();
-    if (c == '!')
-    {
-      newName = true;
-      Serial.print("Your name is ");
-      Serial.println(name);
-    }
-    else if (newName)
-    {
-      newName = false;
-      name = "";
-      name += c;
-    }
-    else
-    {
-      name += c;
+  setupWiFi();
+  fieldData[0]="P";
+  fieldData[1]="RH";
+  fieldData[2]="Tair";
+  fieldData[3]="Tstream";
+  fieldData[4]=String(analogRead(A0));
+  fieldData[5]=String(analogRead(A1));
+  fieldData[6]=String(analogRead(A2));
+  fieldData[7]="Flow";
+  fieldData[8]="Light";
+  fieldData[9]=String(analogRead(A3));
+  fieldData[10]="Rain";
+  fieldData[11]=String(analogRead(A4));
+  fieldData[12]=String(analogRead(A5));
+  // Post data:
+  Serial.println("Posting!");
+  postData(); // the postData() function does all the work, 
+  for(int i=0; i<NUM_FIELDS; i++){
+    Serial.print(fieldData[i]);
+    if(i!=12){
+      Serial.print(",");
     }
   }
+  Serial.println();
+  delay(50000);
 }
 
 void postData()
