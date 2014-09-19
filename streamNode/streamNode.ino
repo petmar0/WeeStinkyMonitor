@@ -3,36 +3,35 @@
 #include "HTU21D.h" //Humidity sensor
 #include <SoftwareSerial.h> //Needed for GPS
 #include <TinyGPS++.h> //GPS parsing
-TinyGPSPlus gps;
-#include <SPI.h>
-#include <SFE_CC3000.h>
-#include <SFE_CC3000_Client.h>
-#include <Progmem.h>
-#include <OneWire.h>
-
-// DS18S20 Temperature chip i/o
-OneWire ds(10);  // on pin 10
+#include <SPI.h>  //For CC3000
+#include <SFE_CC3000.h>  //Also for CC3000
+#include <SFE_CC3000_Client.h>  //As is this
+#include <Progmem.h>  //Expaned memory
+#include <OneWire.h>  //For DS18S20 thermometer
 
 static const int RXPin = 5, TXPin = 4; //GPS is attached to pin 4(TX from GPS) and pin 5(RX into GPS)
-SoftwareSerial ss(RXPin, TXPin); 
-
+SoftwareSerial ss(RXPin, TXPin);  //For GPS input
+SoftwareSerial pHSerial(17, 16);  //For pH sensor output
+TinyGPSPlus gps;  //GPS instance
 MPL3115A2 myPressure; //Create an instance of the pressure sensor
 HTU21D myHumidity; //Create an instance of the humidity sensor
+// DS18S20 Temperature chip i/o
+OneWire ds(18);  // on pin 18
 
-//Hardware pin definitions
+//Hardware pin definitions, all of which are fixed to the weather shield
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 // digital I/O pins
-const byte WSPEED = 3;
-const byte RAIN = 2;
-const byte STAT1 = 7;
-const byte STAT2 = 8;
+const byte WSPEED = 3;  //Windspeed interrupt
+const byte RAIN = 2;  //Rain gauge interrupt
+const byte STAT1 = 7;  //Status 1
+const byte STAT2 = 8;  //Status 2
 const byte GPS_PWRCTL = 6; //Pulling this pin low puts GPS to sleep but maintains RTC and RAM
 
 // analog I/O pins
-const byte REFERENCE_3V3 = A3;
-const byte LIGHT = A1;
-const byte BATT = A2;
-const byte WDIR = A0;
+const byte REFERENCE_3V3 = A3;  //Analog reference voltage (3.3 VDC from board)
+const byte LIGHT = A1;  //Light sensor input
+const byte BATT = A2;  //Battery level input
+const byte WDIR = A0;  //Wind direction potentiometer input
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 //Global Variables
@@ -43,9 +42,9 @@ byte seconds_2m; //Keeps track of the "wind speed/dir avg" over last 2 minutes a
 byte minutes; //Keeps track of where we are in various arrays of data
 byte minutes_10m; //Keeps track of where we are in wind gust/dir over last 10 minutes array of data
 
-long lastWindCheck = 0;
-volatile long lastWindIRQ = 0;
-volatile byte windClicks = 0;
+long lastWindCheck = 0;  //How long has it been since last we checked the wind?
+volatile long lastWindIRQ = 0;  //Wind interrupt request counter
+volatile byte windClicks = 0;  //Actual wind instance counter
 
 //We need to keep track of the following variables:
 //Wind speed/dir each update (no storage)
@@ -57,32 +56,32 @@ volatile byte windClicks = 0;
 
 byte windspdavg[120]; //120 bytes to keep track of 2 minute average
 int winddiravg[120]; //120 ints to keep track of 2 minute average
-float windgust_10m[10]; //10 floats to keep track of 10 minute max
+int windgust_10m[10]; //10 ints to keep track of 10 minute max
 int windgustdirection_10m[10]; //10 ints to keep track of 10 minute max
-volatile float rainHour[60]; //60 floating numbers to keep track of 60 minutes of rain
+volatile int rainHour[60]; //60 inting numbers to keep track of 60 minutes of rain
 
 //These are all the weather values that wunderground expects:
 int winddir = 0; // [0-360 instantaneous wind direction]
-float windspeedmph = 0; // [mph instantaneous wind speed]
-float windgustmph = 0; // [mph current wind gust, using software specific time period]
+int windspeedmph = 0; // [mph instantaneous wind speed]
+int windgustmph = 0; // [mph current wind gust, using software specific time period]
 int windgustdir = 0; // [0-360 using software specific time period]
-float windspdmph_avg2m = 0; // [mph 2 minute average wind speed mph]
+int windspdmph_avg2m = 0; // [mph 2 minute average wind speed mph]
 int winddir_avg2m = 0; // [0-360 2 minute average wind direction]
-float windgustmph_10m = 0; // [mph past 10 minutes wind gust mph ]
+int windgustmph_10m = 0; // [mph past 10 minutes wind gust mph ]
 int windgustdir_10m = 0; // [0-360 past 10 minutes wind gust direction]
-float humidity = 0; // [%]
-float tempf = 0; // [temperature F]
-float rainin = 0; // [rain inches over the past hour)] -- the accumulated rainfall in the past 60 min
-volatile float dailyrainin = 0; // [rain inches so far today in local time]
-//float baromin = 30.03;// [barom in] - It's hard to calculate baromin locally, do this in the agent
-float pressure = 0;
-//float dewptf; // [dewpoint F] - It's hard to calculate dewpoint locally, do this in the agent
+int humidity = 0; // [%]
+int tempf = 0; // [temperature F]
+int rainin = 0; // [rain inches over the past hour)] -- the accumulated rainfall in the past 60 min
+volatile int dailyrainin = 0; // [rain inches so far today in local time]
+//int baromin = 30.03;// [barom in] - It's hard to calculate baromin locally, do this in the agent
+int pressure = 0;
+//int dewptf; // [dewpoint F] - It's hard to calculate dewpoint locally, do this in the agent
 
-float batt_lvl = 11.8; //[analog value from 0 to 1023]
-float light_lvl = 455; //[analog value from 0 to 1023]
+int batt_lvl = 11.8; //[analog value from 0 to 1023]
+int light_lvl = 455; //[analog value from 0 to 1023]
 
 //Variables used for GPS
-//float flat, flon; // 39.015024 -102.283608686
+//int flat, flon; // 39.015024 -102.283608686
 //unsigned long age;
 //int year;
 //byte month, day, hour, minute, second, hundredths;
@@ -128,7 +127,7 @@ volatile uint8_t lastflowpinstate;
 // you can try to keep time of how long it is between pulses
 volatile uint32_t lastflowratetimer = 0;
 // and use that to calculate a flow rate
-volatile float flowrate;
+volatile int flowrate;
 // Interrupt is called once a millisecond, looks for any pulses from the sensor!
 SIGNAL(TIMER0_COMPA_vect) {
   uint8_t x = digitalRead(FLOWSENSORPIN);
@@ -147,13 +146,14 @@ SIGNAL(TIMER0_COMPA_vect) {
   flowrate /= lastflowratetimer;  // in hertz
   lastflowratetimer = 0;
 }
+char ph_data[20];
 ////////////////////////////////////
 // CC3000 Shield Pins & Variables //
 ////////////////////////////////////
 // Don't change these unless you're using a breakout board.
-#define CC3000_INT      2   // Needs to be an interrupt pin (D2/D3)
-#define CC3000_EN       7   // Can be any digital pin
-#define CC3000_CS       10  // Preferred is pin 10 on Uno
+#define CC3000_INT      21   // Needs to be an interrupt pin (D2/D3)
+#define CC3000_EN       20   // Can be any digital pin
+#define CC3000_CS       19  // Preferred is pin 10 on Uno
 #define IP_ADDR_LEN     4   // Length of IP address in bytes
 
 ////////////////////
@@ -161,7 +161,7 @@ SIGNAL(TIMER0_COMPA_vect) {
 ////////////////////
 char ap_ssid[] = "RedRover";                // SSID of network
 char ap_password[] = "";        // Password of network
-unsigned int ap_security = WLAN_SEC_UNSEC; // Security of network
+unsigned int ap_security = 'WLAN_SEC_UNSEC'; // Security of network
 // ap_security can be any of: WLAN_SEC_UNSEC, WLAN_SEC_WEP, 
 //  WLAN_SEC_WPA, or WLAN_SEC_WPA2
 unsigned int timeout = 3000;             // Milliseconds
@@ -184,7 +184,11 @@ void setup()
 {
   Serial.begin(115200);
   ss.begin(9600); //Begin listening to GPS over software serial at 9600. This should be the default baud of the module.
-
+  pHSerial.begin(38400);
+  pHSerial.print("e\r");
+  delay(50);
+  pHSerial.print("e\r");
+  delay(50);
   pinMode(STAT1, OUTPUT); //Status LED Blue
   pinMode(STAT2, OUTPUT); //Status LED Green
   
@@ -285,8 +289,8 @@ void loop()
     if(++seconds_2m > 119) seconds_2m = 0;
 
     //Calc the wind speed and direction every second for 120 second to get 2 minute average
-    float currentSpeed = get_wind_speed();
-    //float currentSpeed = random(5); //For testing
+    int currentSpeed = get_wind_speed();
+    //int currentSpeed = random(5); //For testing
     int currentDirection = get_wind_direction();
     windspdavg[seconds_2m] = (int)currentSpeed;
     winddiravg[seconds_2m] = currentDirection;
@@ -322,25 +326,32 @@ void loop()
 
     digitalWrite(STAT1, LOW); //Turn off stat LED
   }
-  float liters = pulses;
+  int liters = pulses;
   liters /= 7.5;
   liters /= 60.0;
   smartdelay(800); //Wait 1 second, and gather GPS data
   setupWiFi();
   calcWeather();
-  fieldData[0]=String(pressure);
-  fieldData[1]=String(humidity);
-  fieldData[2]=String(tempf);
-  fieldData[3]="Tstream";
-  fieldData[4]=String(analogRead(A0));
-  fieldData[5]=String(analogRead(A1));
-  fieldData[6]=String(analogRead(A2));
-  fieldData[7]=String(liters);
-  fieldData[8]=String(light_lvl);
-  fieldData[9]=String(analogRead(A3));
-  fieldData[10]=String(rainin);
-  fieldData[11]=String(analogRead(A4));
-  fieldData[12]=String(analogRead(A5));
+  fieldData[0]=String(pressure);  // P
+  fieldData[1]=String(humidity);  // RH
+  fieldData[2]=String(tempf);    // Tair
+  fieldData[3]="Tstream";        // Tstream
+  digitalWrite(52, HIGH);
+  fieldData[4]=String(analogRead(A4));  // Conductivity
+  digitalWrite(52, LOW);
+  digitalWrite(50, HIGH);
+  fieldData[5]=String(analogRead(A5));  // Depth1
+  digitalWrite(50, LOW);
+  digitalWrite(48, HIGH);
+  fieldData[6]=String(analogRead(A6));  // Depth2
+  digitalWrite(48, LOW);
+  fieldData[7]=String(liters);    // Flow
+  fieldData[8]=String(light_lvl);  // Light
+  pHSerial.print("R\r");
+  fieldData[9]=String(pHSerial.readBytesUntil(13,ph_data,20));  // pH
+  fieldData[10]=String(rainin);    // Rain
+  fieldData[11]=String(analogRead(A8));  //WindDir
+  fieldData[12]=String(analogRead(A9));  //WindMag
   // Post data:
   Serial.println("Posting!");
   postData(); // the postData() function does all the work, 
@@ -470,7 +481,7 @@ void calcWeather()
   windgustdir = 0;
 
   //Calc windspdmph_avg2m
-  float temp = 0;
+  int temp = 0;
   for(int i = 0 ; i < 120 ; i++)
     temp += windspdavg[i];
   temp /= 120.0;
@@ -500,7 +511,7 @@ void calcWeather()
 
   //Calc humidity
   humidity = myHumidity.readHumidity();
-  //float temp_h = myHumidity.readTemperature();
+  //int temp_h = myHumidity.readTemperature();
   //Serial.print(" TempH:");
   //Serial.print(temp_h, 2);
 
@@ -530,11 +541,11 @@ void calcWeather()
 
 //Returns the voltage of the light sensor based on the 3.3V rail
 //This allows us to ignore what VCC might be (an Arduino plugged into USB has VCC of 4.5 to 5.2V)
-float get_light_level()
+int get_light_level()
 {
-  float operatingVoltage = analogRead(REFERENCE_3V3);
+  int operatingVoltage = analogRead(REFERENCE_3V3);
 
-  float lightSensor = analogRead(LIGHT);
+  int lightSensor = analogRead(LIGHT);
   
   operatingVoltage = 3.3 / operatingVoltage; //The reference voltage is 3.3V
   
@@ -547,11 +558,11 @@ float get_light_level()
 //This allows us to ignore what VCC might be (an Arduino plugged into USB has VCC of 4.5 to 5.2V)
 //Battery level is connected to the RAW pin on Arduino and is fed through two 5% resistors:
 //3.9K on the high side (R1), and 1K on the low side (R2)
-float get_battery_level()
+int get_battery_level()
 {
-  float operatingVoltage = analogRead(REFERENCE_3V3);
+  int operatingVoltage = analogRead(REFERENCE_3V3);
 
-  float rawVoltage = analogRead(BATT);
+  int rawVoltage = analogRead(BATT);
   
   operatingVoltage = 3.30 / operatingVoltage; //The reference voltage is 3.3V
   
@@ -563,13 +574,13 @@ float get_battery_level()
 }
 
 //Returns the instataneous wind speed
-float get_wind_speed()
+int get_wind_speed()
 {
-  float deltaTime = millis() - lastWindCheck; //750ms
+  int deltaTime = millis() - lastWindCheck; //750ms
 
   deltaTime /= 1000.0; //Covert to seconds
 
-  float windSpeed = (float)windClicks / deltaTime; //3 / 0.750s = 4
+  int windSpeed = (int)windClicks / deltaTime; //3 / 0.750s = 4
 
   windClicks = 0; //Reset and start watching for new wind
   lastWindCheck = millis();
@@ -615,7 +626,7 @@ int get_wind_direction()
 
 
 //Prints the various variables directly to the port
-//I don't like the way this function is written but Arduino doesn't support floats under sprintf
+//I don't like the way this function is written but Arduino doesn't support ints under sprintf
 void printWeather()
 {
   calcWeather(); //Go calc all the various sensors
