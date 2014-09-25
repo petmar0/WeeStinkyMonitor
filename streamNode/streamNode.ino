@@ -119,7 +119,7 @@ void wspeedIRQ()
   }
 }
 
-#define FLOWSENSORPIN 2
+#define FLOWSENSORPIN 20
 // count how many pulses!
 volatile uint16_t pulses = 0;
 // track the state of the pulse pin
@@ -335,23 +335,23 @@ void loop()
   fieldData[0]=String(pressure);  // P
   fieldData[1]=String(humidity);  // RH
   fieldData[2]=String(tempf);    // Tair
-  fieldData[3]="Tstream";        // Tstream
+  fieldData[3]=String(int(data)/16);        // Tstream
   digitalWrite(52, HIGH);
   fieldData[4]=String(analogRead(A4));  // Conductivity
   digitalWrite(52, LOW);
   digitalWrite(50, HIGH);
-  fieldData[5]=String(analogRead(A5));  // Depth1
+  fieldData[5]=String(analogRead(A5));  // Depth
   digitalWrite(50, LOW);
   digitalWrite(48, HIGH);
-  fieldData[6]=String(analogRead(A6));  // Depth2
+  fieldData[6]=String(analogRead(A6));  // Turbidity
   digitalWrite(48, LOW);
   fieldData[7]=String(liters);    // Flow
   fieldData[8]=String(light_lvl);  // Light
   pHSerial.print("R\r");
   fieldData[9]=String(pHSerial.readBytesUntil(13,ph_data,20));  // pH
   fieldData[10]=String(rainin);    // Rain
-  fieldData[11]=String(analogRead(A8));  //WindDir
-  fieldData[12]=String(analogRead(A9));  //WindMag
+  fieldData[11]=String(winddir);  //WindDir
+  fieldData[12]=String(windspeedmph);  //WindMag
   // Post data:
   Serial.println("Posting!");
   postData(); // the postData() function does all the work, 
