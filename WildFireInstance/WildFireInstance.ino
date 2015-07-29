@@ -57,6 +57,8 @@ WildFire_CC3000 cc3000;
 /**************************************************************************/
 
 uint32_t ip;
+char cstr[16];
+String str;
 
 void setup(void)
 {
@@ -158,21 +160,31 @@ void loop(void)
 {
   WildFire_CC3000_Client www = cc3000.connectTCP(ip, 80);
   if (www.connected()) {
+    
     www.fastrprint(F("GET "));
     www.fastrprint(WEBPAGE);
     www.fastrprint(F(" HTTP/1.1\r\n"));
     www.fastrprint(F("Host: "));
     www.fastrprint(WEBSITE);
-    www.fastprint("Tstream=");
-    www.fastprint(analogRead(A0));
-    www.fastprint("&conductivity=");
-    www.fastprint(analogRead(A1));
-    www.fastprint("&depth=");
-    www.fastprint(analogRead(A2);
-    www.fastprint("&turbidity=");
-    www.fastprint(analogRead(A3));
+    www.fastrprint("Tstream=");
+    str = String(analogRead(A0),DEC);
+    str.toCharArray(cstr,16);
+    www.fastrprint(cstr);
+    www.fastrprint("&conductivity=");
+    str = String(analogRead(A1),DEC);
+    str.toCharArray(cstr,16);
+    www.fastrprint(cstr);
+    www.fastrprint("&depth=");
+    str = String(analogRead(A2),DEC);
+    str.toCharArray(cstr,16);
+    www.fastrprint(cstr);
+    www.fastrprint("&turbidity=");
+    str = String(analogRead(A3),DEC);
+    str.toCharArray(cstr,16);
+    www.fastrprint(cstr);
     www.fastrprint(F("\r\n"));
     www.fastrprint(F("\r\n"));
+    
     www.println();
   } else {
     Serial.println(F("Connection failed"));    
